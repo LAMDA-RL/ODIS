@@ -1,0 +1,25 @@
+# ----- task setting config -----
+
+# get env information
+env: "sc2"
+# get task information
+task: "stalker-zealot-expert"
+# define train tasks and test tasks
+train_tasks: ["2s3z", "2s4z", "3s5z"]
+train_tasks_data_quality: {
+    "2s3z": "expert",
+    "2s4z": "expert",
+    "3s5z": "expert",
+}
+
+test_tasks: ["1s3z", "1s4z", "1s5z", "2s3z", "2s4z", "2s5z", "3s3z", "3s4z", "3s5z", "4s3z", "4s4z", "4s5z", "4s6z"]
+test_tasks_data_quality: {
+}
+
+# define additional pretrain tasks
+pretrain_tasks: ["2s3z", "2s4z", "3s5z"]
+pretrain_tasks_data_quality: {
+    "2s3z": "expert",
+    "2s4z": "expert",
+    "3s5z": "expert",
+}

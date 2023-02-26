@@ -1,0 +1,25 @@
+# ----- marine battle setting config -----
+
+# get env information
+env: "sc2"
+# get task information
+task: "marine-hard-medium-expert"
+# define train tasks and test tasks
+train_tasks: ["3m", "5m_vs_6m", "9m_vs_10m"]
+train_tasks_data_quality: {
+    "3m": "medium-expert",
+    "5m_vs_6m": "medium-expert",
+    "9m_vs_10m": "medium-expert",
+}
+
+test_tasks: ["3m", "4m", "5m", "10m", "12m", "5m_vs_6m", "7m_vs_8m", "8m_vs_9m", "9m_vs_10m", "10m_vs_11m", "10m_vs_12m", "13m_vs_15m"]
+test_tasks_data_quality: {
+}
+
+# define additional pretrain tasks
+pretrain_tasks: ["3m", "5m_vs_6m", "9m_vs_10m"]
+pretrain_tasks_data_quality: {
+    "3m": "medium-expert",
+    "5m_vs_6m": "medium-expert",
+    "9m_vs_10m": "medium-expert",
+}
