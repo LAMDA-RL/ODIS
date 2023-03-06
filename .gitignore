@@ -1,7 +1,6 @@
 smac/
 *.tar.gz
 *.zip
-dataset/
 3rdparty/
 results/
 
