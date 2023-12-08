@@ -50,7 +50,7 @@ python src/main.py --mto --config=odis --env-config=sc2_offline --task-config=to
 
 The `--task-config` flag can be followed with any existing config name in the `src/config/tasks/` directory, and any other config named `xx` can be passed by `--xx=value`. 
 
-As the dataset is large, we only contain the a toy task config of `3m` medium data in the `dataset` folder from the default code base. Therefore, we provide the data link to the full dataset by this [Google Drive URL](https://drive.google.com/file/d/1yyqMBwZkEV6SIXB7F41Lc9tQeCoq_Nza/view?usp=sharing) and you can substitute the original data with the full dataset. After putting the full dataset in `dataset` folder, you can run experiments in our pre-defined task sets like 
+As the dataset is large, we only contain the a toy task config of `3m` medium data in the `dataset` folder from the default code base. Therefore, we provide the data link to the full dataset by this [Google Drive URL](https://drive.google.com/file/d/1BZSNaAzEN7nAGthsDCpIxXOo1oVoLdqP/view?usp=share_link) and you can substitute the original data with the full dataset. After putting the full dataset in `dataset` folder, you can run experiments in our pre-defined task sets like 
 
 ```bash
 python src/main.py --mto --config=odis --env-config=sc2_offline --task-config=marine-hard-expert --seed=1
