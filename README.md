@@ -58,6 +58,13 @@ python src/main.py --mto --config=odis --env-config=sc2_offline --task-config=ma
 
 All results will be stored in the `results` folder. You can see the console output, config, and tensorboard logging in the cooresponding directory.
 
+Alternatively, you can use the following code to run baselines including BC-t, BC-r, UPDeT-m, and UPDeT-l. 
+
+```bash
+python src/main.py --baseline_run --config=updet-m --env-config=sc2_offline --task-config=toy --seed=1
+# config=[updet-m/updet-l/bc-t/bc-r]
+```
+
 ## License
 
 Code licensed under the Apache License v2.0.
