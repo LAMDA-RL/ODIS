@@ -15,11 +15,12 @@ import yaml
 # import run program
 from run import run as run
 from mto import run as mto
+from baseline_run import run as baseline_run
 
 SETTINGS['CAPTURE_MODE'] = "fd" # set to "no" if you want to see stdout/stderr in console
 logger = get_logger()
 
-ex = Experiment("MOCO")
+ex = Experiment("ODIS")
 ex.logger = logger
 ex.captured_out_filter = apply_backspaces_and_linefeeds
 
@@ -37,6 +38,8 @@ def my_main(_run, _config, _log):
     # run the framework
     if config['run_file'].startswith('mto'):
         mto(_run, config, _log)
+    elif config['run_file'].startswith('baseline_run'):
+        baseline_run(_run, config, _log)
     else:
         run(_run, config, _log)
 

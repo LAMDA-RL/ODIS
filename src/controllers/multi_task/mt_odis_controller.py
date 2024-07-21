@@ -30,13 +30,10 @@ class ODISMAC:
         self.surrogate_decomposer = None
         for task in train_tasks:
             task_args = self.task2args[task]
-            if task_args.env == "sc2":
-                task_decomposer = decomposer_REGISTRY[env2decomposer[task_args.env]](task_args)
-                self.task2decomposer[task] = task_decomposer
-                if not self.surrogate_decomposer:
-                    self.surrogate_decomposer = task_decomposer
-            else:
-                raise NotImplementedError(f"Unsupported env decomposer {task_args.env}")
+            task_decomposer = decomposer_REGISTRY[task_args.env](task_args)
+            self.task2decomposer[task] = task_decomposer
+            if not self.surrogate_decomposer:
+                self.surrogate_decomposer = task_decomposer
             # set obs_shape
             task_args.obs_shape = task_decomposer.obs_dim
 
