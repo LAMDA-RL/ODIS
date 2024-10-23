@@ -1,0 +1,28 @@
+# env config for the grid mpe task: Spread
+
+env: "grid_mpe"
+
+env_args:
+  map_name: cn-2
+  n_agents: 2            
+  field_size: [6,6]      
+  sight: 5               
+  episode_limit: 50        
+  reach_range: 2
+  default_task: True
+
+test_greedy: True
+test_nepisode: 32
+test_interval: 500
+log_interval: 500
+runner_log_interval: 500
+learner_log_interval: 500
+save_model_interval: 10000
+t_max: 40000
+
+# offline dataset
+offline_data_folder: "dataset"
+offline_data_name: ""
+offline_data_quality: "expert"
+offline_data_size: 2000
+offline_data_shuffle: False

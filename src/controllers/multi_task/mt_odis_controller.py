@@ -23,9 +23,6 @@ class ODISMAC:
         self.action_selector = action_REGISTRY[main_args.action_selector](main_args)
 
         # get decomposer for each task
-        env2decomposer = {
-            "sc2": "sc2_decomposer",
-        }
         self.task2decomposer, self.task2dynamic_decoder = {}, {}
         self.surrogate_decomposer = None
         for task in train_tasks:

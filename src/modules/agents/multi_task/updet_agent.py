@@ -5,8 +5,6 @@ import torch.nn.functional as F
 
 from utils.embed import polynomial_embed, binary_embed
 from utils.transformer import Transformer
-
-
 class UPDeTAgent(nn.Module):
     """  sotax agent for multi-task learning """
 

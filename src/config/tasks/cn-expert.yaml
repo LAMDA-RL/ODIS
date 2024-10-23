@@ -1,0 +1,24 @@
+# ----- cn-expert setting config -----
+
+# get env information
+env: "grid_mpe"
+# get task information
+task: "cn-expert"
+# define train tasks and test tasks
+train_tasks: ["cn-2", "cn-4"]
+train_tasks_data_quality: {
+    "cn-2": "expert",
+    "cn-4": "expert",
+}
+
+test_tasks: ["cn-2", "cn-3", "cn-4", "cn-5"]
+test_tasks_data_quality: {
+    "cn-2": "expert",
+}
+
+# define additional pretrain tasks
+pretrain_tasks: ["cn-2", "cn-4"]
+pretrain_tasks_data_quality: {
+    "cn-2": "expert",
+    "cn-4": "expert",
+}

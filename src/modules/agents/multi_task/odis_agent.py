@@ -1,3 +1,4 @@
+import numpy as np
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
@@ -115,14 +116,24 @@ class StateEncoder(nn.Module):
 
         self.n_actions_no_attack = task2decomposer_.n_actions_no_attack
 
+        has_attack_action = task2decomposer_.n_actions_no_attack != task2decomposer_.n_actions
+        if has_attack_action:
+            ally_dim = state_nf_al + (self.n_actions_no_attack + 1)
+            enemy_dim = state_nf_en + 1
+        else:
+            ally_dim = state_nf_al + self.n_actions_no_attack
+            enemy_dim = state_nf_en
+        self.has_attack_action = has_attack_action
+
         # define state information processor
         if self.state_last_action:
-            self.ally_encoder = nn.Linear(state_nf_al + (self.n_actions_no_attack + 1) * 2, self.entity_embed_dim)
-            self.enemy_encoder = nn.Linear(state_nf_en + 1, self.entity_embed_dim)
-            # state_nf_al += self.n_actions_no_attack + 1
-        else:
-            self.ally_encoder = nn.Linear(state_nf_al + (self.n_actions_no_attack + 1), self.entity_embed_dim)
-            self.enemy_encoder = nn.Linear(state_nf_en + 1, self.entity_embed_dim)
+            if has_attack_action:
+                ally_dim += (self.n_actions_no_attack + 1)
+            else:
+                ally_dim += self.n_actions_no_attack
+
+        self.ally_encoder = nn.Linear(ally_dim, self.entity_embed_dim)
+        self.enemy_encoder = nn.Linear(enemy_dim, self.entity_embed_dim)
 
         # we ought to do attention
         self.query = nn.Linear(self.entity_embed_dim, self.attn_embed_dim)
@@ -130,10 +141,7 @@ class StateEncoder(nn.Module):
 
     def forward(self, states, hidden_state, task, actions=None):
         states = states.unsqueeze(1)
-
         task_decomposer = self.task2decomposer[task]
-        task_n_agents = self.task2n_agents[task]
-        last_action_shape = self.task2last_action_shape[task]
 
         bs = states.size(0)
         n_agents = task_decomposer.n_agents
@@ -148,10 +156,13 @@ class StateEncoder(nn.Module):
         current_compact_action_states = current_compact_action_states.reshape(bs, n_agents, -1).permute(1, 0, 2).unsqueeze(2)
         ally_states = th.cat([ally_states, current_compact_action_states], dim=-1)
 
-        current_attack_action_info = current_attack_action_info.reshape(bs, n_agents, n_enemies).sum(dim=1)
-        attack_action_states = (current_attack_action_info > 0).type(ally_states.dtype).reshape(bs, n_enemies, 1, 1).permute(1, 0, 2, 3)
-        enemy_states = th.stack(enemy_states, dim=0)  # [n_enemies, bs, 1, state_nf_en]
-        enemy_states = th.cat([enemy_states, attack_action_states], dim=-1)
+        if self.has_attack_action:
+            current_attack_action_info = current_attack_action_info.reshape(bs, n_agents, n_enemies).sum(dim=1)
+            attack_action_states = (current_attack_action_info > 0).type(ally_states.dtype).reshape(bs, n_enemies, 1, 1).permute(1, 0, 2, 3)
+            enemy_states = th.stack(enemy_states, dim=0)  # [n_enemies, bs, 1, state_nf_en]
+            enemy_states = th.cat([enemy_states, attack_action_states], dim=-1)
+        else:
+            enemy_states = th.stack(enemy_states, dim=0)  # [n_enemies, bs, 1, state_nf_en]
 
         # stack action information
         if self.state_last_action:
@@ -197,18 +208,21 @@ class ObsEncoder(nn.Module):
         obs_own_dim = decomposer.own_obs_dim
         obs_en_dim, obs_al_dim = decomposer.obs_nf_en, decomposer.obs_nf_al
         n_actions_no_attack = decomposer.n_actions_no_attack
-        ## get wrapped obs_own_dim
-        wrapped_obs_own_dim = obs_own_dim + args.id_length + n_actions_no_attack + 1
-        ## enemy_obs ought to add attack_action_info
-        obs_en_dim += 1
+        
+        has_attack_action = n_actions_no_attack != decomposer.n_actions
+        if has_attack_action:
+            ## get wrapped obs_own_dim
+            wrapped_obs_own_dim = obs_own_dim + args.id_length + n_actions_no_attack + 1
+            ## enemy_obs ought to add attack_action_info
+            obs_en_dim += 1
+        else:
+            wrapped_obs_own_dim = obs_own_dim + args.id_length + n_actions_no_attack
 
         self.ally_value = nn.Linear(obs_al_dim, self.entity_embed_dim)
         self.enemy_value = nn.Linear(obs_en_dim, self.entity_embed_dim)
         self.own_value = nn.Linear(wrapped_obs_own_dim, self.entity_embed_dim)
 
         self.transformer = Transformer(self.entity_embed_dim, args.head, args.depth, self.entity_embed_dim)
-
-        # self.q_skill = nn.Linear(self.entity_embed_dim, self.skill_dim)
 
     def init_hidden(self):
         # make hidden states on the same device as model
@@ -243,8 +257,11 @@ class ObsEncoder(nn.Module):
         own_obs = th.cat([own_obs, agent_id_inputs, compact_action_states], dim=-1)
 
         # incorporate attack_action_info into enemy_feats
-        attack_action_info = attack_action_info.transpose(0, 1).unsqueeze(-1)
-        enemy_feats = th.cat([th.stack(enemy_feats, dim=0), attack_action_info], dim=-1)
+        if np.prod(attack_action_info.shape) > 0:
+            attack_action_info = attack_action_info.transpose(0, 1).unsqueeze(-1)
+            enemy_feats = th.cat([th.stack(enemy_feats, dim=0), attack_action_info], dim=-1)
+        else:
+            enemy_feats = th.stack(enemy_feats, dim=0)
         ally_feats = th.stack(ally_feats, dim=0)
 
         # compute key, query and value for attention
@@ -299,19 +316,22 @@ class Decoder(nn.Module):
         obs_own_dim = decomposer.own_obs_dim
         obs_en_dim, obs_al_dim = decomposer.obs_nf_en, decomposer.obs_nf_al
         n_actions_no_attack = decomposer.n_actions_no_attack
-        ## get wrapped obs_own_dim
-        wrapped_obs_own_dim = obs_own_dim + args.id_length + n_actions_no_attack + 1
-        ## enemy_obs ought to add attack_action_info
-        obs_en_dim += 1
+        
+        has_attack_action = n_actions_no_attack != decomposer.n_actions
+        if has_attack_action:
+            ## get wrapped obs_own_dim
+            wrapped_obs_own_dim = obs_own_dim + args.id_length + n_actions_no_attack + 1
+            ## enemy_obs ought to add attack_action_info
+            obs_en_dim += 1
+        else:
+            wrapped_obs_own_dim = obs_own_dim + args.id_length + n_actions_no_attack
 
         self.ally_value = nn.Linear(obs_al_dim, self.entity_embed_dim)
         self.enemy_value = nn.Linear(obs_en_dim, self.entity_embed_dim)
         self.own_value = nn.Linear(wrapped_obs_own_dim, self.entity_embed_dim)
-        # self.skill_value = nn.Linear(self.skill_dim, self.entity_embed_dim)
 
         self.transformer = Transformer(self.entity_embed_dim, args.head, args.depth, self.entity_embed_dim)
 
-        # self.q_skill = nn.Linear(self.entity_embed_dim, n_actions_no_attack)
         self.skill_enc = nn.Linear(self.skill_dim, self.entity_embed_dim)
         self.q_skill = nn.Linear(self.entity_embed_dim + self.entity_embed_dim, n_actions_no_attack)
 
@@ -348,11 +368,13 @@ class Decoder(nn.Module):
         own_obs = th.cat([own_obs, agent_id_inputs, compact_action_states], dim=-1)
 
         # incorporate attack_action_info into enemy_feats
-        attack_action_info = attack_action_info.transpose(0, 1).unsqueeze(-1)
-        enemy_feats = th.cat([th.stack(enemy_feats, dim=0), attack_action_info], dim=-1)
+        if np.prod(attack_action_info.shape) > 0:
+            attack_action_info = attack_action_info.transpose(0, 1).unsqueeze(-1)
+            enemy_feats = th.cat([th.stack(enemy_feats, dim=0), attack_action_info], dim=-1)
+        else:
+            enemy_feats = th.stack(enemy_feats, dim=0)
         ally_feats = th.stack(ally_feats, dim=0)
 
-        # compute key, query and value for attention
         # compute key, query and value for attention
         own_hidden = self.own_value(own_obs).unsqueeze(1)
         ally_hidden = self.ally_value(ally_feats).permute(1, 0, 2)
@@ -369,15 +391,18 @@ class Decoder(nn.Module):
         base_action_inputs = th.cat([outputs[:, 0, :], skill_emb], dim=-1)
         q_base = self.q_skill(base_action_inputs)
 
-        q_attack_list = []
-        for i in range(enemy_feats.size(0)):
-            attack_action_inputs = th.cat([outputs[:, 1+i, :], skill_emb], dim=-1)
-            q_enemy = self.q_skill(attack_action_inputs)
-            q_enemy_mean = th.mean(q_enemy, 1, True)
-            q_attack_list.append(q_enemy_mean)
-        q_attack = th.stack(q_attack_list, dim=1).squeeze()
+        if task_decomposer.n_actions_no_attack == task_decomposer.n_actions:
+            q = q_base
+        else:
+            q_attack_list = []
+            for i in range(enemy_feats.size(0)):
+                attack_action_inputs = th.cat([outputs[:, 1+i, :], skill_emb], dim=-1)
+                q_enemy = self.q_skill(attack_action_inputs)
+                q_enemy_mean = th.mean(q_enemy, 1, True)
+                q_attack_list.append(q_enemy_mean)
+            q_attack = th.stack(q_attack_list, dim=1).squeeze()
 
-        q = th.cat([q_base, q_attack], dim=-1)
+            q = th.cat([q_base, q_attack], dim=-1)
 
         return q, h
 

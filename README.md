@@ -65,6 +65,21 @@ python src/main.py --baseline_run --config=updet-m --env-config=sc2_offline --ta
 # config=[updet-m/updet-l/bc-t/bc-r]
 ```
 
+### Cooperative Navigation Tasks
+
+We also add dataset for the cooperative navigation tasks. Similarly, you can run the following code to run ODIS: 
+
+```bash
+python src/main.py --mto --config=odis --env-config=cn_offline --task-config=cn-expert  --entity_embed_dim=64 --t_max=30000 --seed=1
+```
+
+And also, use the following code to run baselines:
+
+```bash
+python src/main.py --baseline_run --config=bc-t --env-config=cn_offline --task-config=cn-expert  --entity_embed_dim=64 --t_max=30000 --seed=1
+# config=[updet-m/updet-l/bc-t/bc-r]
+```
+
 ## License
 
 Code licensed under the Apache License v2.0.
