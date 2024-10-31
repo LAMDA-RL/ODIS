@@ -80,6 +80,20 @@ python src/main.py --baseline_run --config=bc-t --env-config=cn_offline --task-c
 # config=[updet-m/updet-l/bc-t/bc-r]
 ```
 
+### Data Collection
+
+We provide our scripts for the ODIS dataset style data collection. You can run the following code to collect data
+
+```bash
+python src/main.py --data_collect --config=qmix --env-config=sc2_collect --offline_data_quality=expert --num_episodes_collected=2000 --map_name=5m_vs_6m --save_replay_buffer=False
+```
+
+To collect medium data, you should specify a `stop_winrate` where the policy will start to collect data after reaching the test winrate.
+
+```bash
+python src/main.py --data_collect --config=qmix --env-config=sc2_collect --offline_data_quality=medium --num_episodes_collected=2000 --map_name=5m_vs_6m --save_replay_buffer=False stop_winrate=0.5
+```
+
 ## License
 
 Code licensed under the Apache License v2.0.

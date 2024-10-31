@@ -16,6 +16,7 @@ import yaml
 from run import run as run
 from mto import run as mto
 from baseline_run import run as baseline_run
+from data_collect import run as data_collect
 
 SETTINGS['CAPTURE_MODE'] = "fd" # set to "no" if you want to see stdout/stderr in console
 logger = get_logger()
@@ -40,6 +41,8 @@ def my_main(_run, _config, _log):
         mto(_run, config, _log)
     elif config['run_file'].startswith('baseline_run'):
         baseline_run(_run, config, _log)
+    elif config['run_file'].startswith('data_collect'):
+        data_collect(_run, config, _log)
     else:
         run(_run, config, _log)
 
@@ -146,24 +149,15 @@ if __name__ == '__main__':
     unique_token = "{}{}_{}".format(config_dict['name'], config_dict['remark'], datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
     config_dict['unique_token'] = unique_token
     
-    if config_dict['run_file'].startswith('mto'):
-        if config_dict['evaluate']:
-            results_path = os.path.join(results_path, 'evaluate')
-        results_save_dir = os.path.join(
-            results_path, "mto", config_dict['env'], config_dict['task'],
-            '+'.join([f'{k}-{v}' for k, v in config_dict['train_tasks_data_quality'].items()]),
-            config_dict['name'] + config_dict['remark'],
-            unique_token
-        )
-    else:
-        if config_dict['evaluate']:
-            results_path = os.path.join(results_path, 'evaluate')
-        results_save_dir = os.path.join(
-            results_path, "run_online", 
-            config_dict['env'] + os.sep + config_dict['env_args']['map_name'] if config_dict['env'].startswith('sc2') else config_dict['env'], 
-            config_dict['name'] + config_dict['remark'],
-            unique_token
-        )
+    if config_dict['evaluate']:
+        results_path = os.path.join(results_path, 'evaluate')
+    results_save_dir = os.path.join(
+        results_path, config_dict['run_file'], 
+        config_dict['env'] + os.sep + config_dict['env_args']['map_name'] if config_dict['env'].startswith('sc2') else config_dict['env'], 
+        config_dict['name'] + config_dict['remark'],
+        unique_token
+    )
+
     os.makedirs(results_save_dir, exist_ok=True)
     config_dict['results_save_dir'] = results_save_dir
     config_dict['pretrain_save_dir'] = os.path.join(dirname(results_save_dir), 'pretrain-models')
